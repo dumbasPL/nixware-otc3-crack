@@ -21,12 +21,21 @@
     <ClCompile Include="cheat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Hook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cheat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Classes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="XorCompileTime.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Hook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

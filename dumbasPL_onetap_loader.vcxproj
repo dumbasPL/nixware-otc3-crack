@@ -157,10 +157,13 @@
   <ItemGroup>
     <ClCompile Include="cheat.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Hook.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cheat.h" />
     <ClInclude Include="Classes.h" />
+    <ClInclude Include="Hook.h" />
+    <ClInclude Include="XorCompileTime.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
