@@ -1,4 +1,5 @@
 #pragma once
+#include "XorCompileTime.hpp"
 
 template< typename T >
 T GetVFunc(void* vTable, int iIndex) {
@@ -371,7 +372,68 @@ public:
 
 		GetVFunc<OriginalFn>(this, 25)(this, clr, buf, list);
 	}
+
+	char pad_0x0000[0x4]; //0x0000
+	ConVar* pNext; //0x0004 
+	__int32 bRegistered; //0x0008 
+	char* pszName; //0x000C 
+	char* pszHelpString; //0x0010 
+	__int32 nFlags; //0x0014 
+	char pad_0x0018[0x4]; //0x0018
+	ConVar* pParent; //0x001C 
+	char* pszDefaultValue; //0x0020 
+	char* strString; //0x0024 
+	__int32 StringLength; //0x0028 
+	float fValue; //0x002C 
+	__int32 nValue; //0x0030 
+	__int32 bHasMin; //0x0034 
+	float fMinVal; //0x0038 
+	__int32 bHasMax; //0x003C 
+	float fMaxVal; //0x0040 
+	void* fnChangeCallback; //0x0044 
 };
+
+class ConVar {
+public:
+	inline void SetValue(const char* value) {
+		typedef void(__thiscall* OriginalFn)(void*, const char*);
+		return  GetVFunc<OriginalFn>(this, 14)(this, value);
+	}
+
+	inline void SetValue(float value) {
+		typedef void(__thiscall* OriginalFn)(void*, float);
+		return GetVFunc<OriginalFn>(this, 15)(this, value);
+	}
+
+	inline void SetValue(int value) {
+		typedef void(__thiscall* OriginalFn)(void*, int);
+		return GetVFunc<OriginalFn>(this, 16)(this, value);
+	}
+	float GetFloat(void) const {
+		auto temp = *(int*)(&fValue);
+		auto temp_result = (int)(temp ^ (DWORD)this);
+		return *(float*)(&temp_result);
+	}
+
+	char pad_0x0000[0x4]; //0x0000
+	ConVar* pNext; //0x0004 
+	__int32 bRegistered; //0x0008 
+	char* pszName; //0x000C 
+	char* pszHelpString; //0x0010 
+	__int32 nFlags; //0x0014 
+	char pad_0x0018[0x4]; //0x0018
+	ConVar* pParent; //0x001C 
+	char* pszDefaultValue; //0x0020 
+	char* strString; //0x0024 
+	__int32 StringLength; //0x0028 
+	float fValue; //0x002C 
+	__int32 nValue; //0x0030 
+	__int32 bHasMin; //0x0034 
+	float fMinVal; //0x0038 
+	__int32 bHasMax; //0x003C 
+	float fMaxVal; //0x0040 
+	void* fnChangeCallback; //0x0044 
+};//Size=0x0048
 
 class IEngine {
 public:
@@ -607,4 +669,159 @@ public:
 	virtual bool IsVoiceRecording(void) = 0;
 	virtual void ForceVoiceRecordOn(void) = 0;
 	virtual bool IsReplay(void) = 0;
+};
+
+class IGameEvent {
+public:
+
+	virtual ~IGameEvent() = 0;
+	virtual const char* GetName() const = 0;
+
+	virtual bool  IsReliable() const = 0;
+	virtual bool  IsLocal() const = 0;
+	virtual bool  IsEmpty(const char* keyName = NULL) = 0;
+
+	virtual bool  GetBool(const char* keyName = NULL, bool defaultValue = false) = 0;
+	virtual int   GetInt(const char* keyName = NULL, int defaultValue = 0) = 0;
+	virtual unsigned long GetUint64(const char* keyName = NULL, unsigned long defaultValue = 0) = 0;
+	virtual float GetFloat(const char* keyName = NULL, float defaultValue = 0.0f) = 0;
+	virtual const char* GetString(const char* keyName = NULL, const char* defaultValue = "") = 0;
+	virtual const wchar_t* GetWString(const char* keyName, const wchar_t* defaultValue = L"") = 0;
+
+	virtual void SetBool(const char* keyName, bool value) = 0;
+	virtual void SetInt(const char* keyName, int value) = 0;
+	virtual void SetUint64(const char* keyName, unsigned long value) = 0;
+	virtual void SetFloat(const char* keyName, float value) = 0;
+	virtual void SetString(const char* keyName, const char* value) = 0;
+	virtual void SetWString(const char* keyName, const wchar_t* value) = 0;
+};
+
+class IGameEventListener {
+public:
+	virtual ~IGameEventListener() {}
+	virtual void FireGameEvent(IGameEvent* Event) = 0;
+	virtual int GetEventDebugID() { return 42; }
+};
+
+struct bf_write;
+class bf_read {
+public:
+	uintptr_t base_address;
+	uintptr_t cur_offset;
+
+	bf_read(uintptr_t addr) {
+		base_address = addr;
+		cur_offset = 0;
+	}
+
+	void SetOffset(uintptr_t offset) {
+		cur_offset = offset;
+	}
+
+	void Skip(uintptr_t length) {
+		cur_offset += length;
+	}
+
+	int ReadByte() {
+		auto val = *reinterpret_cast<char*>(base_address + cur_offset);
+		++cur_offset;
+		return val;
+	}
+
+	bool ReadBool() {
+		auto val = *reinterpret_cast<bool*>(base_address + cur_offset);
+		++cur_offset;
+		return val;
+	}
+
+	std::string ReadString() {
+		char buffer[256];
+		auto str_length = *reinterpret_cast<char*>(base_address + cur_offset);
+		++cur_offset;
+		memcpy(buffer, reinterpret_cast<void*>(base_address + cur_offset), str_length > 255 ? 255 : str_length);
+		buffer[str_length > 255 ? 255 : str_length] = '\0';
+		cur_offset += str_length + 1;
+		return std::string(buffer);
+	}
+};
+
+class IGameEventManager {
+public:
+	virtual int __Unknown_1(int* dwUnknown) = 0;
+
+	// load game event descriptions from a file eg "resource\gameevents.res"
+	virtual int LoadEventsFromFile(const char* filename) = 0;
+
+	// removes all and anything
+	virtual void Reset() = 0;
+
+	// adds a listener for a particular event
+	virtual bool AddListener(IGameEventListener* listener, const char* name, bool bServerSide) = 0;
+
+	// returns true if this listener is listens to given event
+	virtual bool FindListener(IGameEventListener* listener, const char* name) = 0;
+
+	// removes a listener 
+	virtual int RemoveListener(IGameEventListener* listener) = 0;
+
+	// create an event by name, but doesn't fire it. returns NULL is event is not
+	// known or no listener is registered for it. bForce forces the creation even if no listener is active
+	virtual IGameEvent* CreateEvent(const char* name, bool bForce, unsigned int dwUnknown) = 0;
+
+	// fires a server event created earlier, if bDontBroadcast is set, event is not send to clients
+	virtual bool FireEvent(IGameEvent* event, bool bDontBroadcast = false) = 0;
+
+	// fires an event for the local client only, should be used only by client code
+	virtual bool FireEventClientSide(IGameEvent* event) = 0;
+
+	// create a new copy of this event, must be free later
+	virtual IGameEvent* DuplicateEvent(IGameEvent* event) = 0;
+
+	// if an event was created but not fired for some reason, it has to bee freed, same UnserializeEvent
+	virtual void FreeEvent(IGameEvent* event) = 0;
+
+	// write/read event to/from bitbuffer
+	virtual bool SerializeEvent(IGameEvent* event, bf_write* buf) = 0;
+
+	// create new KeyValues, must be deleted
+	virtual IGameEvent* UnserializeEvent(bf_read* buf) = 0;
+};
+
+class chat_spam {
+	class player_hurt_listener
+		: public IGameEventListener {
+	public:
+		void start(IGameEventManager * GameEventManager) {
+			GameEventManager->AddListener(this, _("round_start"), false);
+		}
+		void stop(IGameEventManager* GameEventManager) {
+			GameEventManager->RemoveListener(this);
+		}
+		void FireGameEvent(IGameEvent* event) override {
+			chat_spam::singleton()->on_fire_event(event);
+		}
+		int GetEventDebugID(void) override {
+			return 0x2A;
+		}
+	};
+public:
+	static chat_spam* singleton() {
+		static chat_spam* instance = new chat_spam();
+		return instance;
+	}
+	void initialize(IGameEventManager* GameEventManager, IEngine* Engine) {
+		this->engine = Engine;
+		_listener.start(GameEventManager);
+	}
+	void Unload(IGameEventManager* GameEventManager) {
+		_listener.stop(GameEventManager);
+	}
+	void on_fire_event(IGameEvent* event) {
+		if (!strcmp(event->GetName(), _("round_start"))) {
+			engine->ClientCmd_Unrestricted(_("say \"I'm using a CR4CK3D otc by nezu!\""), 0);
+		}
+	}
+private:
+	player_hurt_listener    _listener;
+	IEngine* engine;
 };

@@ -38,5 +38,14 @@
     <ClInclude Include="Hook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="detours.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="detver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="syelog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
